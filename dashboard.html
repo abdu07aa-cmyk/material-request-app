@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Dashboard - Material Request</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar/Navigation -->
+        <nav class="mobile-nav">
+            <div class="nav-header">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Material Req</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="request.html" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Request</span>
+                </a>
+                <a href="history.html" class="nav-item">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </a>
+                <a href="profile.html" class="nav-item">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+            <div class="nav-footer">
+                <button onclick="logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="greeting">
+                    <h2>Dashboard</h2>
+                    <p id="userGreeting">Selamat datang, User</p>
+                </div>
+                <div class="notif-icon">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="notifCount">0</span>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #4CAF50">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Request</span>
+                        <span class="stat-value" id="totalRequests">0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #FF9800">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Pending</span>
+                        <span class="stat-value" id="pendingRequests">0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #2196F3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Approved</span>
+                        <span class="stat-value" id="approvedRequests">0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #F44336">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Rejected</span>
+                        <span class="stat-value" id="rejectedRequests">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Requests -->
+            <div class="section-header">
+                <h3>Permintaan Terbaru</h3>
+                <a href="history.html" class="view-all">Lihat Semua</a>
+            </div>
+            <div class="recent-list" id="recentRequests">
+                <!-- Dynamic content -->
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
