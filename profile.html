@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Profile - Material Request</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="mobile-nav">
+            <div class="nav-header">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Material Req</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="request.html" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Request</span>
+                </a>
+                <a href="history.html" class="nav-item">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </a>
+                <a href="profile.html" class="nav-item active">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+            <div class="nav-footer">
+                <button onclick="logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h2 id="profileName">User</h2>
+                <p id="profileEmail">email@example.com</p>
+            </div>
+            
+            <div class="profile-sections">
+                <div class="profile-card">
+                    <h3><i class="fas fa-user-cog"></i> Informasi Akun</h3>
+                    <div class="profile-field">
+                        <label>Nama</label>
+                        <input type="text" id="fullName" placeholder="Nama lengkap">
+                    </div>
+                    <div class="profile-field">
+                        <label>Department</label>
+                        <select id="department">
+                            <option value="Production">Production</option>
+                            <option value="Warehouse">Warehouse</option>
+                            <option value="Purchasing">Purchasing</option>
+                            <option value="Quality Control">Quality Control</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="updateProfile">
+                        <i class="fas fa-save"></i> Update Profile
+                    </button>
+                </div>
+                
+                <div class="profile-card">
+                    <h3><i class="fas fa-shield-alt"></i> Keamanan</h3>
+                    <div class="profile-field">
+                        <label>Password Baru</label>
+                        <input type="password" id="newPassword" placeholder="Password baru">
+                    </div>
+                    <div class="profile-field">
+                        <label>Konfirmasi Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Konfirmasi password">
+                    </div>
+                    <button class="btn-primary" id="changePassword">
+                        <i class="fas fa-key"></i> Ganti Password
+                    </button>
+                </div>
+                
+                <div class="profile-card danger">
+                    <h3><i class="fas fa-exclamation-triangle" style="color:#F44336"></i> Akun</h3>
+                    <button class="btn-danger" id="deleteAccount">
+                        <i class="fas fa-trash"></i> Hapus Akun
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
