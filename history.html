@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>History - Material Request</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="mobile-nav">
+            <div class="nav-header">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Material Req</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="request.html" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Request</span>
+                </a>
+                <a href="history.html" class="nav-item active">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </a>
+                <a href="profile.html" class="nav-item">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+            <div class="nav-footer">
+                <button onclick="logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>Riwayat Permintaan</h2>
+            </div>
+            
+            <!-- Filter -->
+            <div class="filter-bar">
+                <select id="filterStatus">
+                    <option value="all">Semua Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Completed">Completed</option>
+                </select>
+                <input type="text" id="searchHistory" placeholder="Cari material...">
+            </div>
+            
+            <!-- History List -->
+            <div id="historyList" class="history-list">
+                <!-- Dynamic content -->
+            </div>
+            
+            <div id="historyEmpty" class="empty-state" style="display:none">
+                <i class="fas fa-inbox"></i>
+                <p>Belum ada permintaan</p>
+            </div>
+            
+            <div class="load-more">
+                <button id="loadMoreBtn" class="btn-secondary" style="display:none">
+                    Load More
+                </button>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
