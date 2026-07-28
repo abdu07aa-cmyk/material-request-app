@@ -1,124 +1,92 @@
-// Auth functions using Supabase
+// Auth functions
 
-// Check if user is logged in
+// Cek apakah user sudah login
 async function checkAuth() {
     try {
-        // Tunggu Supabase client siap
-        const client = await getSupabaseClient();
-        if (!client) {
-            console.error('Supabase client not available');
+        if (!window.supabase) {
+            console.error('Supabase not initialized');
             return null;
         }
         
-        const { data: { session } } = await client.auth.getSession();
+        const { data: { session }, error } = await window.supabase.auth.getSession();
+        
+        if (error) {
+            console.error('Session error:', error);
+            return null;
+        }
         
         if (!session) {
-            // Redirect to login if not on login page
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('login.html') && 
-                !currentPath.includes('index.html') &&
-                currentPath !== '/') {
+            // Redirect ke login jika tidak di halaman login
+            if (!window.location.pathname.includes('login.html') && 
+                !window.location.pathname.includes('index.html')) {
                 window.location.href = 'login.html';
             }
             return null;
         }
         
-        // Update UI with user info
+        // Update UI
         updateUserUI(session.user);
         return session.user;
+        
     } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('Check auth error:', error);
         return null;
     }
 }
 
-// Login function
-async function login(email, password) {
+// Fungsi Login
+async function loginUser(email, password) {
     try {
-        const client = await getSupabaseClient();
-        if (!client) {
-            throw new Error('Supabase client not available');
+        if (!window.supabase) {
+            throw new Error('Supabase not initialized');
         }
         
-        const { data, error } = await client.auth.signInWithPassword({
+        const { data, error } = await window.supabase.auth.signInWithPassword({
             email: email,
             password: password
         });
         
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
         
-        // Store session
-        localStorage.setItem('user', JSON.stringify(data.user));
+        if (!data.user) {
+            throw new Error('User tidak ditemukan');
+        }
         
-        // Redirect to dashboard
-        window.location.href = 'dashboard.html';
         return { success: true, user: data.user };
+        
     } catch (error) {
+        console.error('Login error:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Logout function
-async function logout() {
+// Fungsi Logout
+async function logoutUser() {
     try {
-        const client = await getSupabaseClient();
-        if (!client) {
-            throw new Error('Supabase client not available');
+        if (!window.supabase) {
+            throw new Error('Supabase not initialized');
         }
         
-        await client.auth.signOut();
+        const { error } = await window.supabase.auth.signOut();
+        if (error) throw error;
+        
         localStorage.removeItem('user');
         window.location.href = 'login.html';
+        
     } catch (error) {
         console.error('Logout error:', error);
-        showToast('Error logging out: ' + error.message, 'error');
+        showToast('Error logout: ' + error.message, 'error');
     }
 }
 
-// Register function
-async function register(email, password, fullName) {
-    try {
-        const client = await getSupabaseClient();
-        if (!client) {
-            throw new Error('Supabase client not available');
-        }
-        
-        const { data, error } = await client.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    department: 'Production'
-                }
-            }
-        });
-        
-        if (error) throw error;
-        
-        // Create user profile in database
-        if (data.user) {
-            await client
-                .from('users')
-                .insert([
-                    { 
-                        id: data.user.id,
-                        email: email,
-                        full_name: fullName,
-                        department: 'Production'
-                    }
-                ]);
-        }
-        
-        return { success: true, user: data.user };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-// Update user UI
+// Update UI dengan data user
 function updateUserUI(user) {
     if (!user) return;
+    
+    // Simpan ke localStorage
+    localStorage.setItem('user', JSON.stringify(user));
     
     // Update greeting
     const greetingEl = document.getElementById('userGreeting');
@@ -127,7 +95,7 @@ function updateUserUI(user) {
         greetingEl.textContent = `Selamat datang, ${name}`;
     }
     
-    // Update profile page
+    // Update profile
     const nameEl = document.getElementById('profileName');
     if (nameEl) {
         nameEl.textContent = user.user_metadata?.full_name || user.email || 'User';
@@ -137,11 +105,6 @@ function updateUserUI(user) {
     if (emailEl) {
         emailEl.textContent = user.email || '';
     }
-    
-    const fullNameInput = document.getElementById('fullName');
-    if (fullNameInput && user.user_metadata?.full_name) {
-        fullNameInput.value = user.user_metadata.full_name;
-    }
 }
 
 // Toggle password visibility
@@ -149,26 +112,34 @@ function togglePassword() {
     const passwordInput = document.getElementById('password');
     const toggleIcon = document.querySelector('.toggle-password');
     
-    if (passwordInput && toggleIcon) {
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.classList.remove('fa-eye');
-            toggleIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.classList.remove('fa-eye-slash');
-            toggleIcon.classList.add('fa-eye');
-        }
+    if (!passwordInput || !toggleIcon) return;
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
     }
 }
 
-// Event Listeners
+// Isi form demo
+function fillDemo() {
+    document.getElementById('email').value = 'test@demo.com';
+    document.getElementById('password').value = 'password123';
+    showToast('🔑 Form diisi dengan akun demo', 'success');
+}
+
+// ============ EVENT LISTENERS ============
+
+// Saat halaman selesai dimuat
 document.addEventListener('DOMContentLoaded', function() {
-    // Tunggu sebentar untuk memastikan Supabase siap
-    setTimeout(async function() {
-        // Check auth on all pages
-        await checkAuth();
-    }, 100);
+    console.log('Page loaded, initializing...');
+    
+    // Cek auth
+    setTimeout(checkAuth, 500);
     
     // Login form handler
     const loginForm = document.getElementById('loginForm');
@@ -176,33 +147,49 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email')?.value || '';
-            const password = document.getElementById('password')?.value || '';
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             const loginBtn = document.getElementById('loginBtn');
             const loginText = document.getElementById('loginText');
-            const spinner = loginBtn?.querySelector('.fa-spinner');
+            const loginSpinner = document.getElementById('loginSpinner');
             const errorEl = document.getElementById('loginError');
+            const successEl = document.getElementById('loginSuccess');
             
-            // Show loading
-            if (loginBtn) loginBtn.disabled = true;
-            if (loginText) loginText.textContent = 'Login...';
-            if (spinner) spinner.style.display = 'inline-block';
-            if (errorEl) {
-                errorEl.style.display = 'none';
-                errorEl.textContent = '';
+            // Validasi
+            if (!email || !password) {
+                showError('Email dan password harus diisi!');
+                return;
             }
             
-            const result = await login(email, password);
+            if (password.length < 6) {
+                showError('Password minimal 6 karakter!');
+                return;
+            }
             
-            if (!result.success) {
-                if (loginBtn) loginBtn.disabled = false;
-                if (loginText) loginText.textContent = 'Login';
-                if (spinner) spinner.style.display = 'none';
-                if (errorEl) {
-                    errorEl.textContent = '❌ ' + (result.error || 'Login gagal, coba lagi');
-                    errorEl.style.display = 'block';
-                }
-                showToast('Login gagal: ' + result.error, 'error');
+            // Show loading
+            loginBtn.disabled = true;
+            loginText.textContent = 'Login...';
+            loginSpinner.style.display = 'inline-block';
+            hideError();
+            hideSuccess();
+            
+            // Proses login
+            const result = await loginUser(email, password);
+            
+            // Hide loading
+            loginBtn.disabled = false;
+            loginText.textContent = 'Login';
+            loginSpinner.style.display = 'none';
+            
+            if (result.success) {
+                // Login berhasil
+                showSuccess('✅ Login berhasil! Mengalihkan...');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                // Login gagal
+                showError('❌ ' + (result.error || 'Login gagal, coba lagi'));
             }
         });
     }
@@ -215,135 +202,43 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('Fungsi register akan segera tersedia', 'info');
         });
     }
-    
-    // Logout button
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
-    
-    // Profile update
-    const updateProfileBtn = document.getElementById('updateProfile');
-    if (updateProfileBtn) {
-        updateProfileBtn.addEventListener('click', async function() {
-            const user = await checkAuth();
-            if (!user) {
-                showToast('Silakan login terlebih dahulu', 'error');
-                return;
-            }
-            
-            const fullName = document.getElementById('fullName')?.value || '';
-            const department = document.getElementById('department')?.value || '';
-            
-            try {
-                const client = await getSupabaseClient();
-                if (!client) {
-                    throw new Error('Supabase client not available');
-                }
-                
-                const { error } = await client
-                    .from('users')
-                    .update({ full_name: fullName, department: department })
-                    .eq('id', user.id);
-                
-                if (error) throw error;
-                
-                // Update user metadata
-                await client.auth.updateUser({
-                    data: { full_name: fullName }
-                });
-                
-                showToast('Profile berhasil diupdate!', 'success');
-                updateUserUI(user);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-        });
-    }
-    
-    // Change password
-    const changePasswordBtn = document.getElementById('changePassword');
-    if (changePasswordBtn) {
-        changePasswordBtn.addEventListener('click', async function() {
-            const newPassword = document.getElementById('newPassword')?.value || '';
-            const confirmPassword = document.getElementById('confirmPassword')?.value || '';
-            
-            if (newPassword.length < 6) {
-                showToast('Password minimal 6 karakter', 'error');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                showToast('Password tidak cocok', 'error');
-                return;
-            }
-            
-            try {
-                const client = await getSupabaseClient();
-                if (!client) {
-                    throw new Error('Supabase client not available');
-                }
-                
-                const { error } = await client.auth.updateUser({
-                    password: newPassword
-                });
-                
-                if (error) throw error;
-                
-                showToast('Password berhasil diubah!', 'success');
-                const newPassInput = document.getElementById('newPassword');
-                const confirmPassInput = document.getElementById('confirmPassword');
-                if (newPassInput) newPassInput.value = '';
-                if (confirmPassInput) confirmPassInput.value = '';
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-        });
-    }
-    
-    // Delete account
-    const deleteAccountBtn = document.getElementById('deleteAccount');
-    if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', async function() {
-            if (confirm('Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.')) {
-                if (confirm('Konfirmasi lagi: Hapus akun permanen?')) {
-                    try {
-                        const user = await checkAuth();
-                        if (!user) {
-                            showToast('Silakan login terlebih dahulu', 'error');
-                            return;
-                        }
-                        
-                        const client = await getSupabaseClient();
-                        if (!client) {
-                            throw new Error('Supabase client not available');
-                        }
-                        
-                        // Delete user data
-                        await client
-                            .from('users')
-                            .delete()
-                            .eq('id', user.id);
-                        
-                        await client.auth.admin.deleteUser(user.id);
-                        
-                        showToast('Akun berhasil dihapus', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'login.html';
-                        }, 1500);
-                    } catch (error) {
-                        showToast('Error: ' + error.message, 'error');
-                    }
-                }
-            }
-        });
-    }
 });
+
+// Helper functions untuk error/success
+function showError(message) {
+    const errorEl = document.getElementById('loginError');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
+}
+
+function hideError() {
+    const errorEl = document.getElementById('loginError');
+    if (errorEl) {
+        errorEl.style.display = 'none';
+    }
+}
+
+function showSuccess(message) {
+    const successEl = document.getElementById('loginSuccess');
+    if (successEl) {
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+    }
+}
+
+function hideSuccess() {
+    const successEl = document.getElementById('loginSuccess');
+    if (successEl) {
+        successEl.style.display = 'none';
+    }
+}
 
 // Export functions
 window.checkAuth = checkAuth;
-window.login = login;
-window.logout = logout;
-window.register = register;
+window.loginUser = loginUser;
+window.logoutUser = logoutUser;
 window.togglePassword = togglePassword;
-window.getSupabaseClient = getSupabaseClient;
+window.fillDemo = fillDemo;
+window.showToast = showToast;
