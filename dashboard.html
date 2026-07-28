@@ -103,13 +103,67 @@
                 <a href="history.html" class="view-all">Lihat Semua</a>
             </div>
             <div class="recent-list" id="recentRequests">
-                <!-- Dynamic content -->
+                <div style="text-align: center; padding: 20px; color: #6B7280;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                    <p>Loading...</p>
+                </div>
             </div>
         </main>
     </div>
     
-    <script src="js/supabase-config.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/auth.js"></script>
+    <!-- Load Supabase SDK dan scripts -->
+    <script>
+        function loadSupabaseSDK() {
+            return new Promise((resolve, reject) => {
+                if (typeof supabase !== 'undefined') {
+                    resolve(supabase);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                script.async = false;
+                script.onload = function() {
+                    if (typeof supabase !== 'undefined') {
+                        resolve(supabase);
+                    } else {
+                        reject(new Error('Supabase SDK loaded but not available'));
+                    }
+                };
+                script.onerror = function() {
+                    reject(new Error('Failed to load Supabase SDK'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        (async function() {
+            try {
+                await loadSupabaseSDK();
+                console.log('✅ Supabase SDK loaded');
+                
+                // Load config
+                const configScript = document.createElement('script');
+                configScript.src = 'js/supabase-config.js';
+                document.body.appendChild(configScript);
+                
+                configScript.onload = function() {
+                    // Load dashboard
+                    const dashboardScript = document.createElement('script');
+                    dashboardScript.src = 'js/dashboard.js';
+                    document.body.appendChild(dashboardScript);
+                    
+                    // Load auth
+                    const authScript = document.createElement('script');
+                    authScript.src = 'js/auth.js';
+                    document.body.appendChild(authScript);
+                };
+            } catch (error) {
+                console.error('Failed to load Supabase:', error);
+                document.getElementById('recentRequests').innerHTML = 
+                    '<div style="text-align:center;padding:20px;color:#991B1B;">⚠️ Gagal load: ' + error.message + '</div>';
+            }
+        })();
+    </script>
 </body>
 </html>
