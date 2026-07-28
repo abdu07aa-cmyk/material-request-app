@@ -1,12 +1,20 @@
 // Dashboard functionality
 
 async function loadDashboard() {
-    const user = await checkAuth();
-    if (!user) return;
-    
     try {
+        const user = await checkAuth();
+        if (!user) {
+            console.warn('User not authenticated');
+            return;
+        }
+        
+        const client = await getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
         // Get all requests for this user
-        const { data: requests, error } = await supabase
+        const { data: requests, error } = await client
             .from('requests')
             .select('*')
             .eq('user_id', user.id)
@@ -15,13 +23,24 @@ async function loadDashboard() {
         if (error) throw error;
         
         // Update stats
-        updateStats(requests);
+        updateStats(requests || []);
         
         // Show recent requests (last 5)
-        showRecentRequests(requests.slice(0, 5));
+        showRecentRequests((requests || []).slice(0, 5));
         
     } catch (error) {
+        console.error('Dashboard error:', error);
         showToast('Error loading dashboard: ' + error.message, 'error');
+        
+        const container = document.getElementById('recentRequests');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:20px;color:#991B1B;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Gagal load data: ${error.message}</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -31,23 +50,31 @@ function updateStats(requests) {
     const approved = requests.filter(r => r.status === 'Approved').length;
     const rejected = requests.filter(r => r.status === 'Rejected').length;
     
-    document.getElementById('totalRequests').textContent = total;
-    document.getElementById('pendingRequests').textContent = pending;
-    document.getElementById('approvedRequests').textContent = approved;
-    document.getElementById('rejectedRequests').textContent = rejected;
-    document.getElementById('notifCount').textContent = pending;
+    const totalEl = document.getElementById('totalRequests');
+    const pendingEl = document.getElementById('pendingRequests');
+    const approvedEl = document.getElementById('approvedRequests');
+    const rejectedEl = document.getElementById('rejectedRequests');
+    const notifEl = document.getElementById('notifCount');
+    
+    if (totalEl) totalEl.textContent = total;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (approvedEl) approvedEl.textContent = approved;
+    if (rejectedEl) rejectedEl.textContent = rejected;
+    if (notifEl) notifEl.textContent = pending;
 }
 
 function showRecentRequests(requests) {
     const container = document.getElementById('recentRequests');
-    
     if (!container) return;
     
-    if (requests.length === 0) {
+    if (!requests || requests.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
                 <p>Belum ada permintaan</p>
+                <a href="request.html" class="btn-primary" style="margin-top: 10px;">
+                    <i class="fas fa-plus"></i> Buat Request
+                </a>
             </div>
         `;
         return;
@@ -69,8 +96,7 @@ function showRecentRequests(requests) {
 }
 
 function viewRequest(id) {
-    // Implement view detail modal or page
-    showToast('Detail permintaan #' + id, 'info');
+    showToast('Detail permintaan #' + id.substring(0, 8), 'info');
 }
 
 function escapeHtml(text) {
@@ -81,17 +107,24 @@ function escapeHtml(text) {
 }
 
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return 'Baru saja';
-    if (diff < 3600000) return Math.floor(diff / 60000) + ' menit lalu';
-    if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
-    if (diff < 604800000) return Math.floor(diff / 86400000) + ' hari lalu';
-    
-    return date.toLocaleDateString('id-ID');
+    if (!dateString) return '-';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Baru saja';
+        if (diff < 3600000) return Math.floor(diff / 60000) + ' menit lalu';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
+        if (diff < 604800000) return Math.floor(diff / 86400000) + ' hari lalu';
+        
+        return date.toLocaleDateString('id-ID');
+    } catch {
+        return dateString;
+    }
 }
 
 // Load dashboard on page load
-document.addEventListener('DOMContentLoaded', loadDashboard);
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(loadDashboard, 500);
+});
