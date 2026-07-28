@@ -1,69 +1,65 @@
-// Dashboard functionality
+// Dashboard
 
 async function loadDashboard() {
     try {
+        // Cek user
         const user = await checkAuth();
         if (!user) {
-            console.warn('User not authenticated');
+            window.location.href = 'login.html';
             return;
         }
         
-        const client = await getSupabaseClient();
-        if (!client) {
-            throw new Error('Supabase client not available');
+        console.log('User authenticated:', user.email);
+        
+        if (!window.supabase) {
+            throw new Error('Supabase not initialized');
         }
         
-        // Get all requests for this user
-        const { data: requests, error } = await client
+        // Ambil data requests
+        const { data: requests, error } = await window.supabase
             .from('requests')
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching requests:', error);
+            // Jika tabel belum ada, tampilkan pesan
+            if (error.code === '42P01') {
+                showToast('Tabel requests belum dibuat di Supabase', 'error');
+                document.getElementById('recentRequests').innerHTML = `
+                    <div style="text-align:center;padding:20px;color:#6B7280;">
+                        <i class="fas fa-database"></i>
+                        <p>Tabel requests belum dibuat. Silakan buat di Supabase.</p>
+                    </div>
+                `;
+                return;
+            }
+            throw error;
+        }
         
         // Update stats
-        updateStats(requests || []);
+        const total = requests?.length || 0;
+        const pending = requests?.filter(r => r.status === 'Pending').length || 0;
+        const approved = requests?.filter(r => r.status === 'Approved').length || 0;
+        const rejected = requests?.filter(r => r.status === 'Rejected').length || 0;
         
-        // Show recent requests (last 5)
-        showRecentRequests((requests || []).slice(0, 5));
+        document.getElementById('totalRequests').textContent = total;
+        document.getElementById('pendingRequests').textContent = pending;
+        document.getElementById('approvedRequests').textContent = approved;
+        document.getElementById('rejectedRequests').textContent = rejected;
+        document.getElementById('notifCount').textContent = pending;
+        
+        // Show recent
+        showRecent(requests?.slice(0, 5) || []);
         
     } catch (error) {
         console.error('Dashboard error:', error);
-        showToast('Error loading dashboard: ' + error.message, 'error');
-        
-        const container = document.getElementById('recentRequests');
-        if (container) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:20px;color:#991B1B;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Gagal load data: ${error.message}</p>
-                </div>
-            `;
-        }
+        showToast('Error: ' + error.message, 'error');
     }
 }
 
-function updateStats(requests) {
-    const total = requests.length;
-    const pending = requests.filter(r => r.status === 'Pending').length;
-    const approved = requests.filter(r => r.status === 'Approved').length;
-    const rejected = requests.filter(r => r.status === 'Rejected').length;
-    
-    const totalEl = document.getElementById('totalRequests');
-    const pendingEl = document.getElementById('pendingRequests');
-    const approvedEl = document.getElementById('approvedRequests');
-    const rejectedEl = document.getElementById('rejectedRequests');
-    const notifEl = document.getElementById('notifCount');
-    
-    if (totalEl) totalEl.textContent = total;
-    if (pendingEl) pendingEl.textContent = pending;
-    if (approvedEl) approvedEl.textContent = approved;
-    if (rejectedEl) rejectedEl.textContent = rejected;
-    if (notifEl) notifEl.textContent = pending;
-}
-
-function showRecentRequests(requests) {
+function showRecent(requests) {
     const container = document.getElementById('recentRequests');
     if (!container) return;
     
@@ -72,7 +68,7 @@ function showRecentRequests(requests) {
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
                 <p>Belum ada permintaan</p>
-                <a href="request.html" class="btn-primary" style="margin-top: 10px;">
+                <a href="request.html" class="btn-primary" style="margin-top:10px;display:inline-block;">
                     <i class="fas fa-plus"></i> Buat Request
                 </a>
             </div>
@@ -81,50 +77,31 @@ function showRecentRequests(requests) {
     }
     
     container.innerHTML = requests.map(req => `
-        <div class="request-item" onclick="viewRequest('${req.id}')">
+        <div class="request-item">
             <div class="request-info">
-                <div class="request-name">${escapeHtml(req.material_name)}</div>
+                <div class="request-name">${req.material_name || 'Tanpa Nama'}</div>
                 <div class="request-meta">
-                    <span><i class="fas fa-weight-hanging"></i> ${req.quantity} ${req.unit}</span>
-                    <span><i class="fas fa-building"></i> ${escapeHtml(req.supplier)}</span>
-                    <span><i class="fas fa-clock"></i> ${formatDate(req.created_at)}</span>
+                    <span>${req.quantity || 0} ${req.unit || ''}</span>
+                    <span>${req.supplier || '-'}</span>
+                    <span>${formatDate(req.created_at)}</span>
                 </div>
             </div>
-            <span class="request-status status-${req.status.toLowerCase()}">${req.status}</span>
+            <span class="request-status status-${(req.status || 'pending').toLowerCase()}">${req.status || 'Pending'}</span>
         </div>
     `).join('');
-}
-
-function viewRequest(id) {
-    showToast('Detail permintaan #' + id.substring(0, 8), 'info');
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function formatDate(dateString) {
     if (!dateString) return '-';
     try {
         const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) return 'Baru saja';
-        if (diff < 3600000) return Math.floor(diff / 60000) + ' menit lalu';
-        if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
-        if (diff < 604800000) return Math.floor(diff / 86400000) + ' hari lalu';
-        
         return date.toLocaleDateString('id-ID');
     } catch {
         return dateString;
     }
 }
 
-// Load dashboard on page load
+// Load saat halaman siap
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(loadDashboard, 500);
 });
