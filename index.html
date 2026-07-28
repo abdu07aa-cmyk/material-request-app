@@ -15,6 +15,10 @@
             </div>
             <h1>Material Request</h1>
             <p class="subtitle">Sistem Permintaan Material ke Supplier</p>
+            
+            <!-- Error container -->
+            <div id="supabaseError" style="display:none; color: #FEE2E2; background: #991B1B; padding: 10px 20px; border-radius: 8px; margin: 10px 0;"></div>
+            
             <div class="hero-buttons">
                 <a href="login.html" class="btn-primary btn-large">
                     <i class="fas fa-sign-in-alt"></i> Login
@@ -48,7 +52,59 @@
         </footer>
     </div>
     
-    <script src="js/supabase-config.js"></script>
+    <!-- Load Supabase SDK dengan method yang lebih reliable -->
+    <script>
+        // Load Supabase SDK dengan promise
+        function loadSupabaseSDK() {
+            return new Promise((resolve, reject) => {
+                if (typeof supabase !== 'undefined') {
+                    resolve(supabase);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                script.async = false;
+                script.onload = function() {
+                    if (typeof supabase !== 'undefined') {
+                        resolve(supabase);
+                    } else {
+                        reject(new Error('Supabase SDK loaded but not available'));
+                    }
+                };
+                script.onerror = function() {
+                    reject(new Error('Failed to load Supabase SDK'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Load SDK dulu, baru config
+        (async function() {
+            try {
+                await loadSupabaseSDK();
+                console.log('✅ Supabase SDK loaded');
+                
+                // Load config
+                const configScript = document.createElement('script');
+                configScript.src = 'js/supabase-config.js';
+                document.body.appendChild(configScript);
+                
+                // Load other scripts after config
+                configScript.onload = function() {
+                    console.log('✅ Config loaded, ready to use');
+                };
+            } catch (error) {
+                console.error('Failed to load Supabase:', error);
+                const errorEl = document.getElementById('supabaseError');
+                if (errorEl) {
+                    errorEl.style.display = 'block';
+                    errorEl.textContent = '⚠️ Gagal load Supabase: ' + error.message + '. Periksa koneksi internet.';
+                }
+            }
+        })();
+    </script>
+    
     <script>
         document.getElementById('demoBtn').addEventListener('click', function(e) {
             e.preventDefault();
