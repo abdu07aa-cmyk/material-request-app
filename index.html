@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a6a57">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="StokKu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>StokKu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,8 +71,8 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 20px; }
-.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
-.brand svg, .logo svg { width: 20px; height: 20px; }
+.mark { display: block; width: 34px; height: 34px; border-radius: 10px; }
+.mark.big { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
 .icon-btn svg { width: 20px; height: 20px; }
 .spin svg { animation: spin .8s linear infinite; }
@@ -224,8 +232,6 @@ label.check input { width: 22px; height: 22px; min-height: 0; flex: none; }
 .empty .btn { margin-top: 14px; }
 .auth { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
 .auth-card { width: 100%; max-width: 400px; }
-.auth-card .logo { width: 52px; height: 52px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; margin-bottom: 16px; }
-.auth-card .logo svg { width: 28px; height: 28px; }
 .auth-card h1 { font-size: 32px; }
 .auth-card .sub { color: var(--muted); margin: 6px 0 18px; }
 .setup ol { padding-left: 20px; } .setup li { margin: 8px 0; }
@@ -302,7 +308,7 @@ const STAT_LABEL = { ok: 'Aman', low: 'Menipis', out: 'Habis' };
 /* ---------- layar awal ---------- */
 function setupView() {
   app.innerHTML = `<div class="auth"><div class="auth-card setup">
-    <div class="logo">${I.box}</div><h1>Hampir siap</h1>
+    <img class="mark big" src="favicon.svg" alt=""><h1>Hampir siap</h1>
     <p class="sub">Aplikasi belum terhubung ke Supabase.</p>
     <ol>
       <li>Buka <code>config.js</code> di repositori GitHub Anda.</li>
@@ -315,7 +321,7 @@ function setupView() {
 function authView(mode = 'login') {
   const login = mode === 'login';
   app.innerHTML = `<div class="auth"><div class="auth-card">
-    <div class="logo">${I.box}</div>
+    <img class="mark big" src="favicon.svg" alt="">
     <h1>StokKu</h1>
     <p class="sub">Catat stok masuk dan keluar, pantau barang yang hampir habis.</p>
     <form id="authForm">
@@ -361,7 +367,7 @@ function authMsg(e) {
 function shell() {
   const tabs = [['home', 'Beranda', I.home], ['items', 'Barang', I.box], ['history', 'Riwayat', I.clock], ['me', 'Akun', I.user]];
   app.innerHTML = `
-    <header class="top"><div class="brand"><span class="logo">${I.box}</span>StokKu</div>
+    <header class="top"><div class="brand"><img class="mark" src="favicon.svg" alt="">StokKu</div>
       <button class="icon-btn" id="refreshBtn" data-act="refresh" aria-label="Muat ulang data">${I.refresh}</button></header>
     <main class="wrap" id="view"></main>
     <button class="fab" id="fab" data-act="new-product" aria-label="Tambah barang" hidden>${I.plus}</button>
