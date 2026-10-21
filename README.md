@@ -1,8 +1,8 @@
 # StokKu
 
-Aplikasi manajemen stok barang yang nyaman dipakai di ponsel. Hanya butuh dua layanan gratis: **Supabase** (database dan login) dan **GitHub Pages** (hosting).
+Aplikasi manajemen stok barang yang nyaman dipakai di ponsel. Hanya butuh dua layanan gratis: **Supabase** (database, login, penyimpanan foto) dan **GitHub Pages** (hosting).
 
-Fitur: login per akun, tambah/ubah/hapus barang, stok masuk, keluar, dan koreksi (hasil stok opname), peringatan stok menipis dan habis, nilai total stok, grafik 7 hari, riwayat mutasi, ekspor CSV, tampilan terang dan gelap otomatis.
+Fitur: login per akun, barang dengan foto dan kategori, stok masuk, keluar, dan koreksi (stok opname), peringatan stok menipis dan habis, grafik 7 hari, riwayat mutasi, ekspor Excel (.xlsx), tampilan terang dan gelap otomatis.
 
 ## Isi folder
 
@@ -10,39 +10,37 @@ Fitur: login per akun, tambah/ubah/hapus barang, stok masuk, keluar, dan koreksi
 | --- | --- |
 | `index.html` | Seluruh aplikasi (tampilan dan logika) |
 | `config.js` | Alamat dan kunci Supabase milik Anda |
-| `supabase.sql` | Pembuat tabel, aturan keamanan, dan fungsi mutasi stok |
+| `supabase.sql` | Tabel, aturan keamanan, fungsi mutasi stok, dan tempat penyimpanan foto |
 
-## Langkah 1: Siapkan Supabase
+## Pasang dari awal
 
-1. Buat akun di supabase.com, lalu **New project**. Simpan kata sandi database dengan aman.
-2. Buka **SQL Editor**, pilih **New query**, tempel seluruh isi `supabase.sql`, lalu klik **Run**.
-3. Buka **Project Settings, API**. Salin **Project URL** dan kunci **anon public**.
-4. Opsional, agar daftar akun langsung bisa dipakai tanpa email konfirmasi: **Authentication, Providers, Email**, matikan **Confirm email**.
+1. Buat proyek di supabase.com. Jalankan seluruh isi `supabase.sql` di **SQL Editor** (New query, tempel, Run).
+2. Salin **Project URL** dan kunci **anon public** dari Project Settings, API, ke `config.js`. Jangan pakai kunci `service_role`.
+3. Di Authentication, Sign In / Providers, matikan **Confirm email** bila ingin daftar langsung bisa masuk.
+4. Unggah `index.html`, `config.js`, `supabase.sql` ke repositori GitHub. Aktifkan **Settings, Pages**, branch `main`, folder `/ (root)`.
+5. Isi **Site URL** di Authentication, URL Configuration dengan alamat GitHub Pages Anda.
 
-## Langkah 2: Isi `config.js`
+## Memperbarui dari versi sebelumnya
 
-```js
-window.STOK_CONFIG = {
-  SUPABASE_URL: "https://xxxx.supabase.co",
-  SUPABASE_ANON_KEY: "eyJ..."
-};
+1. Jalankan `supabase.sql` yang baru di SQL Editor (aman diulang). Ini menambah tabel kategori, kolom foto, dan bucket foto, serta memindahkan kategori lama ke tabel baru.
+2. Ganti `index.html` di GitHub dengan versi baru. `config.js` tidak perlu diubah.
+3. Tunggu satu sampai dua menit, lalu muat ulang paksa (Ctrl+F5).
+
+Kolom harga lama tetap ada di database dan tidak mengganggu. Untuk menghapusnya:
+
+```sql
+alter table public.products drop column if exists buy_price, drop column if exists sell_price;
 ```
 
-Pakai kunci **anon public**. Jangan pernah memakai kunci `service_role` di sini. Kunci anon aman terlihat publik karena setiap akun hanya bisa membaca dan mengubah datanya sendiri (Row Level Security).
+## Cara pakai singkat
 
-## Langkah 3: Pasang di GitHub Pages
-
-1. Buat repositori baru di GitHub, lalu unggah ketiga file (`index.html`, `config.js`, `supabase.sql`).
-2. Buka **Settings, Pages**. Pada **Build and deployment**, pilih **Deploy from a branch**, branch `main`, folder `/ (root)`, lalu **Save**.
-3. Tunggu satu sampai dua menit. Alamat aplikasi: `https://NAMA-GITHUB.github.io/NAMA-REPO/`.
-4. Kembali ke Supabase, **Authentication, URL Configuration**. Isi **Site URL** dengan alamat di atas supaya tautan konfirmasi email mengarah ke aplikasi Anda.
-
-## Pasang seperti aplikasi di ponsel
-
-Buka alamat aplikasi di Chrome (Android) lalu pilih menu titik tiga, **Tambahkan ke layar utama**. Di iPhone, buka lewat Safari lalu ketuk Bagikan, **Tambah ke Layar Utama**.
+- **Kategori:** tab Barang, ketuk **Kelola** di deretan kategori. Tambah, ubah nama, atau hapus. Menghapus kategori tidak menghapus barang, hanya membuatnya tanpa kategori.
+- **Foto:** saat menambah atau mengubah barang, pilih **Kamera** atau **Galeri**. Foto otomatis dikecilkan (sisi terpanjang 1000 px) agar hemat kuota. Ketuk foto di daftar untuk melihatnya besar.
+- **Excel:** tab Akun, **Ekspor ke Excel**. Berisi sheet Barang (urut per kategori, status berwarna, foto opsional), Riwayat (semua mutasi), dan Per Kategori.
 
 ## Catatan
 
-- Proyek Supabase paket gratis dijeda bila tidak dipakai sekitar tujuh hari. Buka dashboard Supabase lalu klik **Restore** bila itu terjadi. Data tidak hilang.
-- Stok hanya berubah lewat fungsi `record_movement`, sehingga stok tidak bisa minus dan setiap perubahan selalu tercatat di riwayat.
-- Menghapus barang juga menghapus riwayat mutasinya.
+- Penyimpanan gratis Supabase 1 GB. Foto yang sudah dikecilkan sekitar 100 sampai 250 KB, jadi cukup untuk ribuan foto.
+- Foto disimpan di bucket privat. Setiap akun hanya bisa melihat foto miliknya.
+- Proyek Supabase gratis dijeda bila tidak dipakai sekitar tujuh hari. Klik **Restore** di dashboard bila itu terjadi. Data tidak hilang.
+- Menghapus barang juga menghapus riwayat dan fotonya.
