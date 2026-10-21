@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="StokKu">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12957A"/>
+      <stop offset="1" stop-color="#064A3D"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <polygon points="256,106 386,181 256,256 126,181" fill="#F4FBF8"/>
+  <polygon points="126,181 256,256 256,406 126,331" fill="#BFE6DA"/>
+  <polygon points="386,181 256,256 256,406 386,331" fill="#86CDB8"/>
+  <polygon points="305.4,134.5 336.6,152.5 206.6,227.5 175.4,209.5" fill="#F0A04B"/>
+  <polygon points="175.4,209.5 206.6,227.5 206.6,302.5 175.4,284.5" fill="#D98A2F"/>
+</svg>
