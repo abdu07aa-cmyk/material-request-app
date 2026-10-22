@@ -11,6 +11,19 @@ Fitur: login per akun, barang dengan foto dan kategori, stok masuk, keluar, dan 
 | `index.html` | Seluruh aplikasi (tampilan dan logika) |
 | `config.js` | Alamat dan kunci Supabase milik Anda |
 | `supabase.sql` | Tabel, aturan keamanan, fungsi mutasi stok, dan tempat penyimpanan foto |
+| `manifest.webmanifest` | Data aplikasi untuk layar utama ponsel (nama, warna, ikon) |
+| `favicon.svg`, `favicon-32.png` | Logo untuk tab browser dan tampilan di dalam aplikasi |
+| `apple-touch-icon.png` | Ikon layar utama iPhone dan iPad |
+| `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Ikon layar utama Android |
+
+Unggah semua file ini ke repositori GitHub dalam folder yang sama dengan `index.html`.
+
+## Taruh di layar utama ponsel
+
+- **Android (Chrome):** buka alamat aplikasi, ketuk menu titik tiga, pilih **Instal aplikasi** atau **Tambahkan ke layar utama**.
+- **iPhone (Safari):** buka alamat aplikasi, ketuk tombol Bagikan, pilih **Tambah ke Layar Utama**.
+
+Setelah ditambahkan, StokKu terbuka layar penuh seperti aplikasi biasa. Bila ikon lama masih muncul, hapus ikonnya lalu tambahkan lagi.
 
 ## Pasang dari awal
 
@@ -36,6 +49,9 @@ alter table public.products drop column if exists buy_price, drop column if exis
 
 - **Kategori:** tab Barang, ketuk **Kelola** di deretan kategori. Tambah, ubah nama, atau hapus. Menghapus kategori tidak menghapus barang, hanya membuatnya tanpa kategori.
 - **Foto:** saat menambah atau mengubah barang, pilih **Kamera** atau **Galeri**. Foto otomatis dikecilkan (sisi terpanjang 1000 px) agar hemat kuota. Ketuk foto di daftar untuk melihatnya besar.
+- **Ukuran:** isi kolom **Ukuran** saat menambah atau mengubah barang (misalnya `1/2 inch`, `10 mm`, `L`). Ukuran tampil di daftar, bisa dicari, dan ikut ke Excel.
+- **Peringatan batas minimum:** barang dianggap mencapai batas bila stok sama dengan atau di bawah **Stok minimum** yang Anda isi (isi 0 bila tidak ingin diperingatkan). Peringatan muncul sebagai: lonceng bermerah di pojok atas dengan jumlah barang, kotak peringatan di Beranda, daftar peringatan saat aplikasi dibuka, dan kotak peringatan langsung setelah stok keluar membuat barang mencapai batas. Filter **Perlu restock** di tab Barang menampilkan semuanya.
+- **Notifikasi perangkat:** tab Akun, **Aktifkan**. Notifikasi sistem hanya muncul saat aplikasi sedang terbuka. Aplikasi ini tidak memakai server, jadi tidak bisa mengirim notifikasi saat ditutup. Di iPhone, notifikasi dari halaman web umumnya tidak didukung, tetapi lonceng dan kotak peringatan tetap berfungsi.
 - **Excel:** tab Akun, **Ekspor ke Excel**. Berisi sheet Barang (urut per kategori, status berwarna, foto opsional), Riwayat (semua mutasi), dan Per Kategori.
 
 ## Catatan
