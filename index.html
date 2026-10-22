@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a6a57">
+<meta name="theme-color" content="#1f292e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="StokKu">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>StokKu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,8 +71,7 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 20px; }
-.mark { display: block; width: 34px; height: 34px; border-radius: 10px; overflow: hidden; }
-.mark svg { width: 100%; height: 100%; display: block; }
+.mark { display: block; width: 34px; height: 34px; border-radius: 10px; }
 .mark.big { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
 .icon-btn svg { width: 20px; height: 20px; }
@@ -272,18 +272,6 @@ const longf = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeStyle: '
 const num = v => Number(String(v).replace(',', '.')) || 0;
 const BUCKET = 'product-photos';
 
-const LOGO = (id) => `<svg viewBox="0 0 512 512" width="100%" height="100%" role="img" aria-label="StokKu">
-  <defs><linearGradient id="lg-${id}" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#12957A"/><stop offset="1" stop-color="#064A3D"/>
-  </linearGradient></defs>
-  <rect width="512" height="512" rx="112" fill="url(#lg-${id})"/>
-  <polygon points="256,106 386,181 256,256 126,181" fill="#F4FBF8"/>
-  <polygon points="126,181 256,256 256,406 126,331" fill="#BFE6DA"/>
-  <polygon points="386,181 256,256 256,406 386,331" fill="#86CDB8"/>
-  <polygon points="305.4,134.5 336.6,152.5 206.6,227.5 175.4,209.5" fill="#F0A04B"/>
-  <polygon points="175.4,209.5 206.6,227.5 206.6,302.5 175.4,284.5" fill="#D98A2F"/>
-</svg>`;
-
 const I = {
   box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
@@ -320,7 +308,7 @@ const STAT_LABEL = { ok: 'Aman', low: 'Menipis', out: 'Habis' };
 /* ---------- layar awal ---------- */
 function setupView() {
   app.innerHTML = `<div class="auth"><div class="auth-card setup">
-    <span class="mark big">${LOGO('setup')}</span><h1>Hampir siap</h1>
+    <img class="mark big" src="favicon.svg" alt=""><h1>Hampir siap</h1>
     <p class="sub">Aplikasi belum terhubung ke Supabase.</p>
     <ol>
       <li>Buka <code>config.js</code> di repositori GitHub Anda.</li>
@@ -333,7 +321,7 @@ function setupView() {
 function authView(mode = 'login') {
   const login = mode === 'login';
   app.innerHTML = `<div class="auth"><div class="auth-card">
-    <span class="mark big">${LOGO('auth')}</span>
+    <img class="mark big" src="favicon.svg" alt="">
     <h1>StokKu</h1>
     <p class="sub">Catat stok masuk dan keluar, pantau barang yang hampir habis.</p>
     <form id="authForm">
@@ -379,7 +367,7 @@ function authMsg(e) {
 function shell() {
   const tabs = [['home', 'Beranda', I.home], ['items', 'Barang', I.box], ['history', 'Riwayat', I.clock], ['me', 'Akun', I.user]];
   app.innerHTML = `
-    <header class="top"><div class="brand"><span class="mark">${LOGO('head')}</span>StokKu</div>
+    <header class="top"><div class="brand"><img class="mark" src="favicon.svg" alt="">StokKu</div>
       <button class="icon-btn" id="refreshBtn" data-act="refresh" aria-label="Muat ulang data">${I.refresh}</button></header>
     <main class="wrap" id="view"></main>
     <button class="fab" id="fab" data-act="new-product" aria-label="Tambah barang" hidden>${I.plus}</button>
