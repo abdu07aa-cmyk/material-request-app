@@ -77,6 +77,24 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
 .icon-btn svg { width: 20px; height: 20px; }
 .spin svg { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.hbtns { display: flex; gap: 8px; }
+.bell { position: relative; }
+.badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--crit); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); }
+.bell.has { color: var(--crit); border-color: var(--crit); }
+.bell.has svg { animation: ring 1.6s ease-in-out 2; transform-origin: 50% 10%; }
+@keyframes ring { 0%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(14deg); } 20%, 40% { transform: rotate(-14deg); } 60% { transform: rotate(0); } }
+.alert-banner { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 1px solid; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; cursor: pointer; }
+.alert-banner b { font-size: 15px; }
+.alert-banner span { font-size: 13px; }
+.alert-banner.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.alert-banner.crit { background: var(--crit-bg); color: var(--crit); border-color: var(--crit); }
+.limit-box { margin-top: 12px; padding: 14px; border-radius: 16px; border: 1px solid; }
+.limit-box.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.limit-box.crit { background: var(--crit-bg); color: var(--crit); border-color: var(--crit); }
+.limit-box .nm { font-family: var(--f-display); font-weight: 800; font-size: 20px; overflow-wrap: anywhere; }
+.limit-box .sz { font-weight: 600; margin-top: 2px; overflow-wrap: anywhere; }
+.limit-box .ln { margin-top: 10px; font-size: 15px; }
+.limit-box .ln b { font-family: var(--f-display); font-size: 22px; }
 
 .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(110px + env(safe-area-inset-bottom, 0px)); }
 .page-title { font-size: 24px; margin-bottom: 14px; }
@@ -279,13 +297,14 @@ const I = {
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
-  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/></svg>'
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 004 0"/></svg>'
 };
 
 /* ---------- state ---------- */
 const cfg = window.STOK_CONFIG || {};
 const ready = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && !/GANTI/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY));
-const state = { user: null, products: [], cats: [], moves: [], photos: {}, photoAt: 0, tab: 'home', q: '', cat: '', stat: 'all', mtype: 'all', loading: false };
+const state = { user: null, products: [], cats: [], moves: [], photos: {}, photoAt: 0, alerted: false, tab: 'home', q: '', cat: '', stat: 'all', mtype: 'all', loading: false };
 let sb = null, catDraw = null;
 const app = $('#app');
 
@@ -368,7 +387,10 @@ function shell() {
   const tabs = [['home', 'Beranda', I.home], ['items', 'Barang', I.box], ['history', 'Riwayat', I.clock], ['me', 'Akun', I.user]];
   app.innerHTML = `
     <header class="top"><div class="brand"><img class="mark" src="favicon.svg" alt="">StokKu</div>
-      <button class="icon-btn" id="refreshBtn" data-act="refresh" aria-label="Muat ulang data">${I.refresh}</button></header>
+      <div class="hbtns">
+        <button class="icon-btn bell" id="bellBtn" data-act="alerts" aria-label="Peringatan stok">${I.bell}<span class="badge" id="bellBadge" hidden>0</span></button>
+        <button class="icon-btn" id="refreshBtn" data-act="refresh" aria-label="Muat ulang data">${I.refresh}</button>
+      </div></header>
     <main class="wrap" id="view"></main>
     <button class="fab" id="fab" data-act="new-product" aria-label="Tambah barang" hidden>${I.plus}</button>
     <nav class="tabs" aria-label="Menu utama"><div class="tabs-in">
@@ -390,7 +412,7 @@ async function loadAll() {
   const [p, c, m] = await Promise.all([
     sb.from('products').select('*').order('name'),
     sb.from('categories').select('*').order('name'),
-    sb.from('stock_movements').select('*, products(name, unit)').order('created_at', { ascending: false }).limit(500)
+    sb.from('stock_movements').select('*, products(name, unit, size)').order('created_at', { ascending: false }).limit(500)
   ]);
   state.loading = false; $('#refreshBtn')?.classList.remove('spin');
   const err = p.error || c.error || m.error;
@@ -402,6 +424,14 @@ async function loadAll() {
   if (state.cat && state.cat !== '__none' && !state.cats.some(x => x.id === state.cat)) state.cat = '';
   await signPhotos();
   renderView();
+  if (!state.alerted) {
+    state.alerted = true;
+    const L = alertItems();
+    if (L.length) {
+      if ($('#sheetBack').hidden) alertSheet();
+      sysNotify('Stok mencapai batas minimum', `${L.length} barang perlu diisi ulang.`);
+    }
+  }
 }
 
 async function start(user) {
@@ -412,6 +442,7 @@ function renderView() {
   const v = $('#view'); if (!v) return;
   document.querySelectorAll('.tab').forEach(b => { if (b.dataset.tab === state.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#fab').hidden = state.tab !== 'items';
+  updateBell();
   const keepSearch = document.activeElement && document.activeElement.id === 'q';
   v.innerHTML = ({ home: homeHTML, items: itemsHTML, history: historyHTML, me: meHTML })[state.tab]();
   if (keepSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
@@ -460,7 +491,10 @@ function homeHTML() {
   const low = P.filter(p => status(p) === 'low'), out = P.filter(p => status(p) === 'out');
   const need = [...out, ...low].slice(0, 5);
   const cs = state.cats.length ? catSummary() : [];
+  const nAlert = low.length + out.length;
+  const banner = nAlert ? `<button class="alert-banner ${out.length ? 'crit' : 'warn'}" data-act="alerts"><b>${nAlert} barang mencapai batas minimum</b><span>${out.length ? out.length + ' habis, ' : ''}${low.length} menipis. Ketuk untuk melihat.</span></button>` : '';
   return `<h2 class="page-title">Beranda</h2>
+  ${banner}
   <div class="tiles">
     <div class="tile hero"><div class="k">Jenis barang</div><div class="v num">${nf.format(P.length)}</div><div class="s">${state.cats.length ? nf.format(state.cats.length) + ' kategori' : 'Belum ada kategori'}</div></div>
     <div class="tile alert-low"><div class="k">Menipis</div><div class="v num">${low.length}</div><div class="s">di bawah stok minimum</div></div>
@@ -491,7 +525,7 @@ function productRow(p) {
     ${thumb(p)}
     <div><div class="name">${esc(p.name)}<span class="pill ${st}">${STAT_LABEL[st]}</span></div>
       <div class="meta">${p.sku ? `<span class="mono">${esc(p.sku)}</span> · ` : ''}${esc(catOf(p))}</div>
-      <div class="meta">Stok minimum ${nf.format(p.min_stock)} ${esc(p.unit)}</div></div>
+      <div class="meta">${p.size ? 'Ukuran ' + esc(p.size) + ' · ' : ''}Stok minimum ${nf.format(p.min_stock)} ${esc(p.unit)}</div></div>
     <div class="qty num">${nf.format(p.stock)}<small>${esc(p.unit)}</small></div>
     <div class="actions"><button class="btn sm" data-act="move" data-t="in" data-id="${esc(p.id)}">+ Masuk</button>
       <button class="btn sm" data-act="move" data-t="out" data-id="${esc(p.id)}">− Keluar</button></div></div>`;
@@ -499,9 +533,9 @@ function productRow(p) {
 function filteredProducts() {
   const q = state.q.trim().toLowerCase();
   return state.products.filter(p =>
-    (!q || (p.name + ' ' + (p.sku || '') + ' ' + catOf(p)).toLowerCase().includes(q)) &&
+    (!q || (p.name + ' ' + (p.size || '') + ' ' + (p.sku || '') + ' ' + catOf(p)).toLowerCase().includes(q)) &&
     (!state.cat || (state.cat === '__none' ? !p.category_id : p.category_id === state.cat)) &&
-    (state.stat === 'all' || status(p) === state.stat));
+    (state.stat === 'all' || (state.stat === 'alert' ? status(p) !== 'ok' : status(p) === state.stat)));
 }
 function itemsHTML() {
   const P = state.products, none = P.filter(p => !p.category_id).length;
@@ -512,21 +546,21 @@ function itemsHTML() {
   const schip = (k, l) => `<button class="chip" data-act="stat" data-v="${k}" aria-pressed="${state.stat === k}">${l}</button>`;
   const list = filteredProducts();
   return `<h2 class="page-title">Barang</h2>
-    <div class="search">${I.search}<input id="q" type="search" placeholder="Cari nama, kode, atau kategori" value="${esc(state.q)}" aria-label="Cari barang"></div>
+    <div class="search">${I.search}<input id="q" type="search" placeholder="Cari nama, ukuran, kode, atau kategori" value="${esc(state.q)}" aria-label="Cari barang"></div>
     ${cats}
-    <div class="chips" style="margin-top:0" role="group" aria-label="Status stok">${schip('all', 'Semua status')}${schip('low', 'Menipis')}${schip('out', 'Habis')}${schip('ok', 'Aman')}</div>
+    <div class="chips" style="margin-top:0" role="group" aria-label="Status stok">${schip('all', 'Semua status')}${schip('alert', 'Perlu restock')}${schip('low', 'Menipis')}${schip('out', 'Habis')}${schip('ok', 'Aman')}</div>
     ${list.length ? `<div class="list">${list.map(productRow).join('')}</div>` :
       `<div class="card empty"><h3>${P.length ? 'Tidak ada hasil' : 'Belum ada barang'}</h3><p>${P.length ? 'Ubah kata kunci atau filter.' : 'Ketuk tombol + untuk menambah barang pertama.'}</p></div>`}`;
 }
 
 /* ---------- Riwayat ---------- */
 function moveRow(m) {
-  const name = m.products?.name || 'Barang dihapus', unit = m.products?.unit || '';
+  const name = m.products?.name || 'Barang dihapus', unit = m.products?.unit || '', size = m.products?.size || '';
   const sign = m.type === 'in' ? '+' : m.type === 'out' ? '−' : '=';
   const label = m.type === 'in' ? 'Masuk' : m.type === 'out' ? 'Keluar' : 'Koreksi';
   const shown = m.type === 'adjust' ? m.stock_after : m.qty;
   return `<div class="move"><div class="dot ${m.type}">${sign}</div>
-    <div><div class="t">${esc(name)}</div><div class="m">${label}${m.note ? ' · ' + esc(m.note) : ''} · ${esc(dtf.format(new Date(m.created_at)))}</div></div>
+    <div><div class="t">${esc(name)}${size ? ' · ' + esc(size) : ''}</div><div class="m">${label}${m.note ? ' · ' + esc(m.note) : ''} · ${esc(dtf.format(new Date(m.created_at)))}</div></div>
     <div class="q ${m.type}">${sign}${nf.format(shown)} ${esc(unit)}<small>sisa ${nf.format(m.stock_after)}</small></div></div>`;
 }
 function historyHTML() {
@@ -543,6 +577,7 @@ function meHTML() {
   return `<h2 class="page-title">Akun</h2>
   <div class="card">
     <div class="acc-row"><div class="l">${esc(state.user.email)}<small>Data tersimpan di Supabase dan hanya bisa dilihat akun ini.</small></div></div>
+    <div class="acc-row"><div class="l">Notifikasi perangkat<small>Muncul saat stok mencapai batas minimum dan aplikasi sedang terbuka</small></div><button class="btn sm" style="flex:none" data-act="notif">${notifOn() ? 'Matikan' : 'Aktifkan'}</button></div>
     <div class="acc-row"><div class="l">Kategori<small>${state.cats.length} kategori</small></div><button class="btn sm" style="flex:none" data-act="cats">Kelola</button></div>
     <div class="acc-row"><div class="l">Ekspor ke Excel<small>Barang, riwayat, dan ringkasan kategori (.xlsx)</small></div><button class="btn sm" style="flex:none" data-act="export">Unduh</button></div>
   </div>
@@ -585,7 +620,7 @@ const removeFile = path => path ? sb.storage.from(BUCKET).remove([path]).catch((
 
 function photoSheet(p) {
   const u = state.photos[p.photo_path];
-  openSheet(`<h2>${esc(p.name)}</h2><p class="sub">${esc(catOf(p))}${p.sku ? ' · ' + esc(p.sku) : ''}</p>
+  openSheet(`<h2>${esc(p.name)}</h2><p class="sub">${p.size ? 'Ukuran ' + esc(p.size) + ' · ' : ''}${esc(catOf(p))}${p.sku ? ' · ' + esc(p.sku) : ''}</p>
     <img class="big" src="${esc(u)}" alt="Foto ${esc(p.name)}">
     <div class="btns"><button class="btn" data-act="close">Tutup</button><button class="btn primary" data-act="edit" data-id="${esc(p.id)}">Ubah barang</button></div>`);
 }
@@ -611,6 +646,7 @@ function productSheet(p) {
       <input type="file" id="ph-cam" accept="image/*" capture="environment" hidden>
       <input type="file" id="ph-gal" accept="image/*" hidden>
       <label for="f-name">Nama barang</label><input id="f-name" required maxlength="120" value="${esc(p.name)}">
+      <label for="f-size">Ukuran</label><input id="f-size" maxlength="60" value="${esc(p.size)}" placeholder="Contoh: 1/2 inch, 10 mm, L, 2 x 4 m">
       <div class="row2"><div><label for="f-sku">Kode / SKU</label><input id="f-sku" maxlength="60" value="${esc(p.sku)}"></div>
         <div><label for="f-unit">Satuan</label><input id="f-unit" list="units" required maxlength="20" value="${esc(p.unit || 'pcs')}"><datalist id="units">${units.map(u => `<option value="${u}">`).join('')}</datalist></div></div>
       <label for="f-cat">Kategori</label>
@@ -661,7 +697,7 @@ function productSheet(p) {
     let photoErr = null, uploaded = null;
     try {
       const row = {
-        name: $('#f-name').value.trim(), sku: $('#f-sku').value.trim() || null, unit: $('#f-unit').value.trim() || 'pcs',
+        name: $('#f-name').value.trim(), size: $('#f-size').value.trim() || null, sku: $('#f-sku').value.trim() || null, unit: $('#f-unit').value.trim() || 'pcs',
         category_id: await resolveCategory(), min_stock: Math.max(0, num($('#f-min').value))
       };
       if (isNew) {
@@ -828,6 +864,7 @@ async function exportExcel(withPhotos, progress) {
     ...(withPhotos ? [{ k: 'foto', l: 'Foto', w: 13, h: 'center' }] : []),
     { k: 'sku', l: 'Kode / SKU', w: 16, h: 'left' },
     { k: 'name', l: 'Nama Barang', w: 34, h: 'left', wrap: true },
+    { k: 'size', l: 'Ukuran', w: 18, h: 'left', wrap: true },
     { k: 'cat', l: 'Kategori', w: 20, h: 'left' },
     { k: 'unit', l: 'Satuan', w: 10, h: 'center' },
     { k: 'stock', l: 'Stok', w: 10, h: 'right' },
@@ -842,7 +879,7 @@ async function exportExcel(withPhotos, progress) {
   const jobs = [];
   list.forEach((p, idx) => {
     const st = STAT_LABEL[status(p)];
-    const vals = { no: idx + 1, foto: '', sku: p.sku || '', name: p.name, cat: catOf(p), unit: p.unit, stock: Number(p.stock), min: Number(p.min_stock), st };
+    const vals = { no: idx + 1, foto: '', sku: p.sku || '', name: p.name, size: p.size || '', cat: catOf(p), unit: p.unit, stock: Number(p.stock), min: Number(p.min_stock), st };
     const row = ws.addRow(cols.map(c => vals[c.k]));
     styleRow(row, cols, idx + 1, withPhotos ? 46 : 20);
     const si = cols.findIndex(c => c.k === 'stock') + 1, mi = cols.findIndex(c => c.k === 'min') + 1, ti = cols.findIndex(c => c.k === 'st') + 1;
@@ -867,7 +904,7 @@ async function exportExcel(withPhotos, progress) {
   progress('Menyusun riwayat…');
   const wm = wb.addWorksheet('Riwayat');
   const mcols = [
-    { l: 'Tanggal', w: 18, h: 'center' }, { l: 'Barang', w: 34, h: 'left', wrap: true }, { l: 'Kategori', w: 20, h: 'left' },
+    { l: 'Tanggal', w: 18, h: 'center' }, { l: 'Barang', w: 34, h: 'left', wrap: true }, { l: 'Ukuran', w: 18, h: 'left', wrap: true }, { l: 'Kategori', w: 20, h: 'left' },
     { l: 'Jenis', w: 11, h: 'center' }, { l: 'Jumlah', w: 11, h: 'right' }, { l: 'Satuan', w: 10, h: 'center' },
     { l: 'Stok Setelah', w: 14, h: 'right' }, { l: 'Catatan', w: 38, h: 'left', wrap: true }
   ];
@@ -877,14 +914,14 @@ async function exportExcel(withPhotos, progress) {
     const p = byId[m.product_id] || {}, d = new Date(m.created_at);
     const [label, color] = tcolor[m.type];
     const q = Number(m.qty), signed = m.type === 'in' ? q : m.type === 'out' ? -q : q;
-    const row = wm.addRow([new Date(d.getTime() - d.getTimezoneOffset() * 60000), p.name || '', p.category_id ? catOf(p) : 'Tanpa kategori', label, signed, p.unit || '', Number(m.stock_after), m.note || '']);
+    const row = wm.addRow([new Date(d.getTime() - d.getTimezoneOffset() * 60000), p.name || '', p.size || '', p.category_id ? catOf(p) : 'Tanpa kategori', label, signed, p.unit || '', Number(m.stock_after), m.note || '']);
     styleRow(row, mcols, idx + 1, 0);
     row.getCell(1).numFmt = 'dd/mm/yyyy hh:mm';
     const intOk = Number.isInteger(q);
-    row.getCell(5).numFmt = m.type === 'adjust' ? intFmt(q) : (intOk ? '+#,##0;-#,##0' : '+#,##0.00;-#,##0.00');
-    row.getCell(7).numFmt = intFmt(Number(m.stock_after));
-    row.getCell(4).font = { bold: true, color: { argb: color } };
+    row.getCell(6).numFmt = m.type === 'adjust' ? intFmt(q) : (intOk ? '+#,##0;-#,##0' : '+#,##0.00;-#,##0.00');
+    row.getCell(8).numFmt = intFmt(Number(m.stock_after));
     row.getCell(5).font = { bold: true, color: { argb: color } };
+    row.getCell(6).font = { bold: true, color: { argb: color } };
   });
 
   /* Sheet 3: Per Kategori */
@@ -921,10 +958,53 @@ function exportSheet() {
   };
 }
 
+/* ---------- peringatan batas minimum ---------- */
+const rank = p => ({ ok: 0, low: 1, out: 2 })[status(p)];
+const alertItems = () => state.products.filter(p => status(p) !== 'ok').sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name, 'id'));
+const notifOn = () => { try { return localStorage.getItem('stokku_notif') === '1' && 'Notification' in window && Notification.permission === 'granted'; } catch { return false; } };
+function sysNotify(title, body) {
+  try { if (notifOn()) new Notification(title, { body, icon: 'icon-192.png', tag: 'stokku-alert' }); } catch { /* tidak didukung */ }
+}
+function updateBell() {
+  const b = $('#bellBadge'), bell = $('#bellBtn'); if (!b || !bell) return;
+  const n = alertItems().length;
+  b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n);
+  bell.classList.toggle('has', n > 0);
+  bell.setAttribute('aria-label', n ? `Peringatan stok, ${n} barang` : 'Peringatan stok');
+}
+function alertRow(p) {
+  const st = status(p);
+  return `<div class="item stripe-${st}" style="grid-template-columns:minmax(0,1fr) auto">
+    <div><div class="name">${esc(p.name)}<span class="pill ${st}">${STAT_LABEL[st]}</span></div>
+      <div class="meta">${p.size ? 'Ukuran ' + esc(p.size) + ' · ' : ''}${esc(catOf(p))}</div>
+      <div class="meta">Stok ${nf.format(p.stock)} ${esc(p.unit)} · batas minimum ${nf.format(p.min_stock)}</div></div>
+    <button class="btn sm" style="flex:none;min-width:84px" data-act="move" data-t="in" data-id="${esc(p.id)}">+ Masuk</button></div>`;
+}
+function alertSheet() {
+  const L = alertItems(), out = L.filter(p => status(p) === 'out').length;
+  openSheet(`<h2>Peringatan stok</h2>
+    <p class="sub">${L.length ? `${L.length} barang sudah mencapai batas minimum${out ? ', ' + out + ' di antaranya habis' : ''}.` : 'Semua stok masih di atas batas minimum.'}</p>
+    ${L.length ? `<div class="list" style="margin-top:12px">${L.map(alertRow).join('')}</div>` : ''}
+    <div class="btns"><button type="button" class="btn" data-act="close">Tutup</button>${L.length ? '<button type="button" class="btn primary" data-act="go-low">Lihat di Barang</button>' : ''}</div>`);
+}
+function limitSheet(p) {
+  const st = status(p), out = st === 'out';
+  $('#toast').className = '';
+  try { navigator.vibrate && navigator.vibrate([140, 70, 140]); } catch { /* tidak didukung */ }
+  sysNotify(out ? 'Stok habis' : 'Batas minimum tercapai', `${p.name}${p.size ? ' ' + p.size : ''}: sisa ${nf.format(p.stock)} ${p.unit}`);
+  openSheet(`<h2>${out ? 'Stok habis' : 'Batas minimum tercapai'}</h2>
+    <div class="limit-box ${out ? 'crit' : 'warn'}" role="alert">
+      <div class="nm">${esc(p.name)}</div>
+      ${p.size ? `<div class="sz">Ukuran ${esc(p.size)}</div>` : ''}
+      <div class="ln">Sisa <b class="num">${nf.format(p.stock)}</b> ${esc(p.unit)} · batas minimum ${nf.format(p.min_stock)} ${esc(p.unit)}</div>
+    </div>
+    <div class="btns"><button type="button" class="btn" data-act="close">Nanti</button><button type="button" class="btn primary" data-act="move" data-t="in" data-id="${esc(p.id)}">+ Stok masuk</button></div>`);
+}
+
 /* ---------- mutasi stok ---------- */
 function moveSheet(p, type) {
   let t = type;
-  openSheet(`<h2>${esc(p.name)}</h2><p class="sub">Stok saat ini <b class="num">${nf.format(p.stock)} ${esc(p.unit)}</b></p>
+  openSheet(`<h2>${esc(p.name)}</h2><p class="sub">${p.size ? 'Ukuran ' + esc(p.size) + ' · ' : ''}Stok saat ini <b class="num">${nf.format(p.stock)} ${esc(p.unit)}</b></p>
     <form id="mf" autocomplete="off">
       <div class="seg" role="group" aria-label="Jenis mutasi">
         <button type="button" data-t="in">Masuk</button><button type="button" data-t="out">Keluar</button><button type="button" data-t="adjust">Koreksi</button></div>
@@ -958,6 +1038,8 @@ function moveSheet(p, type) {
     const { error } = await sb.rpc('record_movement', { p_product: p.id, p_type: t, p_qty: qty, p_note: $('#m-note').value });
     if (error) { toast(error.message, true); btn.disabled = false; return; }
     closeSheet(); toast('Stok diperbarui'); await loadAll();
+    const np = state.products.find(x => x.id === p.id);
+    if (np && t !== 'in' && status(np) !== 'ok') limitSheet(np);
   };
 }
 
@@ -977,7 +1059,20 @@ document.addEventListener('click', async e => {
   if (act === 'cat') { state.cat = el.dataset.v; return renderView(); }
   if (act === 'cats') return catSheet();
   if (act === 'mtype') { state.mtype = el.dataset.v; return renderView(); }
-  if (act === 'go-low') { state.tab = 'items'; state.stat = 'low'; state.cat = ''; return renderView(); }
+  if (act === 'alerts') return alertSheet();
+  if (act === 'go-low') { closeSheet(); state.tab = 'items'; state.stat = 'alert'; state.cat = ''; state.q = ''; renderView(); scrollTo(0, 0); return; }
+  if (act === 'notif') {
+    try {
+      if (!('Notification' in window)) throw new Error('unsupported');
+      if (notifOn()) { localStorage.setItem('stokku_notif', '0'); toast('Notifikasi perangkat dimatikan'); }
+      else {
+        const r = await Notification.requestPermission();
+        if (r === 'granted') { localStorage.setItem('stokku_notif', '1'); toast('Notifikasi perangkat diaktifkan'); }
+        else toast('Izin notifikasi ditolak. Ubah di pengaturan browser.', true);
+      }
+    } catch { toast('Perangkat ini tidak mendukung notifikasi dari halaman web.', true); }
+    return renderView();
+  }
   if (act === 'go-cat') { state.tab = 'items'; state.cat = el.dataset.id; state.stat = 'all'; state.q = ''; renderView(); scrollTo(0, 0); return; }
   if (act === 'go-history') { state.tab = 'history'; return renderView(); }
   if (act === 'export') return exportSheet();
@@ -1000,7 +1095,7 @@ document.addEventListener('input', e => { if (e.target.id === 'q') { state.q = e
 (async function init() {
   if (!ready) return setupView();
   sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') { state.user = null; state.products = []; state.cats = []; state.moves = []; state.photos = {}; state.tab = 'home'; closeSheet(); authView(); } });
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') { state.user = null; state.products = []; state.cats = []; state.moves = []; state.photos = {}; state.alerted = false; state.tab = 'home'; closeSheet(); authView(); } });
   const { data: { session } } = await sb.auth.getSession();
   if (session) start(session.user); else authView();
 })();
